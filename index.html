@@ -7,7 +7,6 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -16,155 +15,159 @@
     </script>
     <style>
         [x-cloak] { display: none !important; }
-        .table-row-anim { transition: all 0.3s ease; }
+        .fade-enter { opacity: 0; transform: translateY(-10px); }
+        .fade-enter-active { transition: all 0.3s ease; opacity: 1; transform: translateY(0); }
     </style>
 </head>
 <body class="bg-gray-50 text-gray-800 dark:bg-gray-900 dark:text-gray-100 transition-colors duration-300 min-h-screen">
 
-    <div x-data="app()" x-init="initApp()" class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+    <div x-data="tableManager()" x-init="initApp()" class="max-w-7xl mx-auto p-4 md:p-8">
         
-        <header class="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
-            <h1 class="text-2xl font-bold text-blue-700 dark:text-blue-400 flex items-center gap-2">
-                <i class="fa-solid fa-table-list"></i> لوحة إدارة البرامج
+        <header class="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
+            <h1 class="text-3xl font-black text-blue-600 dark:text-blue-400 flex items-center gap-3">
+                <i class="fa-solid fa-chart-pie"></i> نظام إدارة الميزانيات
             </h1>
             <div class="flex items-center gap-3">
-                <button @click="exportCSV()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow transition flex items-center gap-2">
-                    <i class="fa-solid fa-file-csv"></i> تصدير البيانات
+                <button @click="exportCSV()" class="bg-green-600 hover:bg-green-700 text-white px-5 py-2.5 rounded-xl shadow-lg transition-all flex items-center gap-2 font-bold">
+                    <i class="fa-solid fa-file-export"></i> تصدير البيانات
                 </button>
-                <button @click="toggleDarkMode()" class="p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition">
-                    <i class="fa-solid" :class="isDark ? 'fa-sun text-yellow-400' : 'fa-moon text-gray-700'"></i>
+                <button @click="toggleDarkMode()" class="p-3 rounded-xl bg-white dark:bg-gray-800 shadow-md hover:scale-105 transition-transform">
+                    <i class="fa-solid text-xl" :class="isDark ? 'fa-sun text-yellow-400' : 'fa-moon text-blue-600'"></i>
                 </button>
             </div>
         </header>
 
-        <div x-show="toast.show" x-transition.opacity.duration.300ms x-cloak
-             class="fixed top-5 left-1/2 transform -translate-x-1/2 z-50 px-6 py-3 rounded-lg shadow-lg text-white font-semibold flex items-center gap-2"
-             :class="toast.type === 'success' ? 'bg-green-500' : (toast.type === 'error' ? 'bg-red-500' : 'bg-blue-500')">
-            <i class="fa-solid" :class="toast.type === 'success' ? 'fa-check-circle' : 'fa-info-circle'"></i>
+        <div x-show="toast.show" x-cloak x-transition class="fixed top-10 left-1/2 -translate-x-1/2 z-50 px-6 py-3 rounded-2xl shadow-2xl text-white font-bold flex items-center gap-3"
+             :class="toast.type === 'success' ? 'bg-green-500' : 'bg-red-500'">
+            <i class="fa-solid" :class="toast.type === 'success' ? 'fa-circle-check' : 'fa-circle-xmark'"></i>
             <span x-text="toast.message"></span>
         </div>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
             
-            <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 lg:col-span-1 h-fit">
-                <h2 class="text-xl font-bold mb-5 flex items-center gap-2 border-b pb-3 dark:border-gray-700">
-                    <i class="fa-solid fa-pen-to-square text-blue-500"></i>
-                    <span x-text="form.id ? 'تعديل البيان' : 'إضافة بيان جديد'"></span>
-                </h2>
-                
-                <form @submit.prevent="saveData" class="space-y-4">
-                    <div>
-                        <label class="block text-sm font-semibold mb-1">اسم البرنامج</label>
-                        <input type="text" x-model="form.program" required placeholder="مثال: برنامج التعليم"
-                               class="w-full p-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 outline-none transition">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-semibold mb-1">البيان (البند)</label>
-                        <input type="text" x-model="form.item" required placeholder="مثال: أدوات مكتبية"
-                               class="w-full p-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 outline-none transition">
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
-                        <div>
-                            <label class="block text-sm font-semibold mb-1">العدد</label>
-                            <input type="number" step="any" x-model.number="form.count" required
-                                   class="w-full p-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 outline-none transition">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-semibold mb-1">السعر</label>
-                            <input type="number" step="any" x-model.number="form.price" required
-                                   class="w-full p-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 outline-none transition">
-                        </div>
-                    </div>
+            <div class="lg:col-span-4">
+                <div class="bg-white dark:bg-gray-800 p-8 rounded-3xl shadow-xl border border-gray-100 dark:border-gray-700 sticky top-8">
+                    <h2 class="text-xl font-bold mb-6 flex items-center gap-2 text-gray-700 dark:text-gray-200">
+                        <i class="fa-solid fa-circle-plus text-blue-500"></i>
+                        <span x-text="form.id ? 'تعديل البيانات' : 'إضافة بيان جديد'"></span>
+                    </h2>
                     
-                    <div class="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-lg flex justify-between items-center mt-2 border border-blue-100 dark:border-blue-800">
-                        <span class="font-bold text-blue-800 dark:text-blue-300">المبلغ الإجمالي:</span>
-                        <span class="font-bold text-lg text-blue-800 dark:text-blue-300" x-text="calculatedTotal + ' ج.م'"></span>
-                    </div>
+                    <form @submit.prevent="saveEntry" class="space-y-5">
+                        <div>
+                            <label class="block text-sm font-bold mb-2">اسم البرنامج</label>
+                            <input type="text" x-model="form.program" required placeholder="ادخل اسم البرنامج..."
+                                   class="w-full p-3.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 focus:ring-4 focus:ring-blue-500/20 outline-none transition">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-bold mb-2">اسم البيان</label>
+                            <input type="text" x-model="form.item" required placeholder="وصف البيان..."
+                                   class="w-full p-3.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 focus:ring-4 focus:ring-blue-500/20 outline-none transition">
+                        </div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-sm font-bold mb-2">العدد</label>
+                                <input type="number" step="any" x-model.number="form.count" required
+                                       class="w-full p-3.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 focus:ring-4 focus:ring-blue-500/20 outline-none transition">
+                            </div>
+                            <div>
+                                <label class="block text-sm font-bold mb-2">السعر</label>
+                                <input type="number" step="any" x-model.number="form.price" required
+                                       class="w-full p-3.5 rounded-xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 focus:ring-4 focus:ring-blue-500/20 outline-none transition">
+                            </div>
+                        </div>
+                        
+                        <div class="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-2xl border border-blue-100 dark:border-blue-800 flex justify-between items-center">
+                            <span class="font-bold text-blue-800 dark:text-blue-300">المجموع:</span>
+                            <span class="text-xl font-black text-blue-700 dark:text-blue-400" x-text="formatCurrency(calculatedTotal)"></span>
+                        </div>
 
-                    <div class="pt-4 flex gap-2">
-                        <button type="submit" :disabled="isLoading" 
-                                class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg font-bold shadow transition flex justify-center items-center gap-2 disabled:opacity-50">
-                            <span x-show="!isLoading" x-text="form.id ? 'حفظ التعديلات' : 'إضافة للجدول'"></span>
-                            <i x-show="isLoading" class="fa-solid fa-spinner fa-spin"></i>
-                        </button>
-                        <button type="button" x-show="form.id" @click="resetForm()" 
-                                class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2.5 rounded-lg font-bold shadow transition">
-                            إلغاء
-                        </button>
-                    </div>
-                </form>
+                        <div class="flex gap-2">
+                            <button type="submit" :disabled="loading" 
+                                    class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-2xl font-black shadow-lg shadow-blue-500/30 transition-all disabled:opacity-50">
+                                <span x-show="!loading" x-text="form.id ? 'حفظ التعديلات' : 'إضافة للجدول'"></span>
+                                <i x-show="loading" class="fa-solid fa-spinner fa-spin"></i>
+                            </button>
+                            <button type="button" x-show="form.id" @click="resetForm()" 
+                                    class="bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 px-6 py-4 rounded-2xl font-bold transition">
+                                إلغاء
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
 
-            <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 lg:col-span-2">
-                
-                <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
-                    <div class="relative w-full sm:w-1/2">
-                        <i class="fa-solid fa-search absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
-                        <input type="text" x-model="searchQuery" placeholder="ابحث في البرامج والبيانات..."
-                               class="w-full p-2 pr-10 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 outline-none transition">
+            <div class="lg:col-span-8">
+                <div class="bg-white dark:bg-gray-800 p-6 rounded-3xl shadow-xl border border-gray-100 dark:border-gray-700">
+                    
+                    <div class="flex flex-col md:flex-row gap-4 justify-between items-center mb-8">
+                        <div class="relative w-full md:w-1/2">
+                            <i class="fa-solid fa-magnifying-glass absolute right-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                            <input type="text" x-model="searchQuery" placeholder="بحث في البرامج أو البيانات..."
+                                   class="w-full p-3 pr-12 rounded-2xl border border-gray-200 dark:border-gray-600 bg-gray-50 dark:bg-gray-900 outline-none focus:ring-2 focus:ring-blue-500">
+                        </div>
+                        <div class="bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 px-6 py-3 rounded-2xl font-black border border-indigo-100 dark:border-indigo-800">
+                            الإجمالي العام: <span x-text="formatCurrency(grandTotal)"></span>
+                        </div>
                     </div>
-                    <div class="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 px-4 py-2 rounded-lg font-bold whitespace-nowrap border border-green-200 dark:border-green-800">
-                        إجمالي المشاريع: <span x-text="formatCurrency(grandTotal)"></span>
-                    </div>
-                </div>
 
-                <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
-                    <table class="w-full text-right border-collapse">
-                        <thead>
-                            <tr class="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-b dark:border-gray-600">
-                                <th class="p-3 whitespace-nowrap cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600" @click="sortBy('item')">البيان <i class="fa-solid fa-sort text-xs opacity-50"></i></th>
-                                <th class="p-3 whitespace-nowrap">العدد</th>
-                                <th class="p-3 whitespace-nowrap">السعر</th>
-                                <th class="p-3 whitespace-nowrap text-left">المبلغ</th>
-                                <th class="p-3 whitespace-nowrap text-center">إجراءات</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <template x-if="Object.keys(groupedItems).length === 0">
-                                <tr><td colspan="5" class="p-8 text-center text-gray-500">لا توجد بيانات متاحة.</td></tr>
-                            </template>
-                            
-                            <template x-for="(group, programName) in groupedItems" :key="programName">
-                                <template x-if="group.length > 0">
-                                    <tbody class="border-b-2 border-gray-300 dark:border-gray-600">
-                                        <tr class="bg-blue-50 dark:bg-blue-900/20">
-                                            <td colspan="5" class="p-3 font-bold text-blue-800 dark:text-blue-300">
-                                                <i class="fa-solid fa-folder-open ml-2"></i> <span x-text="programName"></span>
+                    <div class="overflow-x-auto rounded-2xl border border-gray-100 dark:border-gray-700">
+                        <table class="w-full text-right border-collapse">
+                            <thead>
+                                <tr class="bg-gray-50 dark:bg-gray-700/50 text-gray-600 dark:text-gray-300 border-b dark:border-gray-700">
+                                    <th class="p-4 cursor-pointer hover:text-blue-500 transition" @click="sortBy('item')">البيان <i class="fa-solid fa-sort text-[10px] opacity-50"></i></th>
+                                    <th class="p-4">العدد</th>
+                                    <th class="p-4">السعر</th>
+                                    <th class="p-4 text-left">المبلغ</th>
+                                    <th class="p-4 text-center">الإجراءات</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <template x-if="isFetching">
+                                    <tr><td colspan="5" class="p-20 text-center"><i class="fa-solid fa-spinner fa-spin text-4xl text-blue-500"></i></td></tr>
+                                </template>
+                                
+                                <template x-for="(group, programName) in groupedItems" :key="programName">
+                                    <tbody class="border-b-4 border-gray-50 dark:border-gray-900">
+                                        <tr class="bg-blue-50/50 dark:bg-blue-900/20">
+                                            <td colspan="5" class="p-4 font-black text-blue-800 dark:text-blue-300 border-r-4 border-blue-500">
+                                                <i class="fa-solid fa-folder-tree ml-2"></i> <span x-text="programName"></span>
                                             </td>
                                         </tr>
-                                        
-                                        <template x-for="item in group" :key="item.id">
-                                            <tr class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750 table-row-anim">
-                                                <td class="p-3 text-gray-800 dark:text-gray-200" x-text="item.item"></td>
-                                                <td class="p-3 text-gray-600 dark:text-gray-400" x-text="item.count"></td>
-                                                <td class="p-3 text-gray-600 dark:text-gray-400" x-text="item.price"></td>
-                                                <td class="p-3 font-semibold text-left text-gray-800 dark:text-gray-200" x-text="formatCurrency(item.total)"></td>
-                                                <td class="p-3 text-center space-x-2 space-x-reverse">
-                                                    <button @click="editItem(item)" class="text-blue-500 hover:text-blue-700 p-1" title="تعديل"><i class="fa-solid fa-edit"></i></button>
-                                                    <button @click="deleteItem(item.id)" class="text-red-500 hover:text-red-700 p-1" title="حذف"><i class="fa-solid fa-trash"></i></button>
+                                        <template x-for="entry in group" :key="entry.id">
+                                            <tr class="border-b dark:border-gray-700/50 hover:bg-gray-50 dark:hover:bg-gray-750 transition-colors">
+                                                <td class="p-4 font-medium" x-text="entry.item"></td>
+                                                <td class="p-4 text-gray-500" x-text="entry.count"></td>
+                                                <td class="p-4 text-gray-500" x-text="formatCurrency(entry.price)"></td>
+                                                <td class="p-4 font-bold text-left" x-text="formatCurrency(entry.total)"></td>
+                                                <td class="p-4 text-center space-x-2 space-x-reverse">
+                                                    <button @click="editEntry(entry)" class="text-blue-500 hover:scale-120 p-2"><i class="fa-solid fa-pen-to-square"></i></button>
+                                                    <button @click="deleteEntry(entry.id)" class="text-red-400 hover:scale-120 p-2"><i class="fa-solid fa-trash-can"></i></button>
                                                 </td>
                                             </tr>
                                         </template>
-
-                                        <tr class="bg-gray-50 dark:bg-gray-800/50">
-                                            <td colspan="3" class="p-3 font-bold text-left text-gray-700 dark:text-gray-300">إجمالي <span x-text="programName"></span>:</td>
-                                            <td colspan="2" class="p-3 font-bold text-left text-green-700 dark:text-green-400" x-text="formatCurrency(calculateProgramTotal(group))"></td>
+                                        <tr class="bg-gray-50 dark:bg-gray-800/40">
+                                            <td colspan="3" class="p-4 text-left font-bold text-gray-500">إجمالي <span x-text="programName"></span>:</td>
+                                            <td colspan="2" class="p-4 text-left font-black text-green-600 dark:text-green-400" x-text="formatCurrency(calculateSubtotal(group))"></td>
                                         </tr>
                                     </tbody>
                                 </template>
-                            </template>
-                        </tbody>
-                    </table>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        function app() {
+        // رابط الـ Backend الخاص بك
+        const API_URL = 'https://script.google.com/macros/s/AKfycbxnVUYmQEGRrCMWfDLOmAdBYPy64ushw4w4kiCEgnkV5UbgfBa09R-u6dLleRjv39mh/exec';
+
+        function tableManager() {
             return {
                 isDark: false,
-                isLoading: false,
+                loading: false,
+                isFetching: true,
                 items: [],
                 searchQuery: '',
                 sortCol: 'item',
@@ -172,52 +175,49 @@
                 form: { id: null, program: '', item: '', count: '', price: '' },
                 toast: { show: false, message: '', type: 'success' },
 
-                initApp() {
-                    // فحص الوضع الليلي المفضل
-                    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                async initApp() {
+                    // الوضع الليلي الافتراضي حسب إعدادات الجهاز
+                    if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
                         this.isDark = true;
                         document.documentElement.classList.add('dark');
                     }
-                    // دالة الـ Init لجلب البيانات
-                    google.script.run.withSuccessHandler(data => {
-                        this.items = data;
-                    }).initData();
+                    await this.fetchData();
+                },
+
+                async fetchData() {
+                    this.isFetching = true;
+                    try {
+                        const res = await fetch(API_URL);
+                        this.items = await res.json();
+                    } catch (e) {
+                        this.showToast('فشل في جلب البيانات', 'error');
+                    } finally {
+                        this.isFetching = false;
+                    }
                 },
 
                 toggleDarkMode() {
                     this.isDark = !this.isDark;
-                    if (this.isDark) {
-                        document.documentElement.classList.add('dark');
-                    } else {
-                        document.documentElement.classList.remove('dark');
-                    }
-                },
-
-                showToast(msg, type = 'success') {
-                    this.toast = { show: true, message: msg, type: type };
-                    setTimeout(() => this.toast.show = false, 3000);
+                    document.documentElement.classList.toggle('dark');
                 },
 
                 get calculatedTotal() {
-                    let c = parseFloat(this.form.count) || 0;
-                    let p = parseFloat(this.form.price) || 0;
-                    return c * p;
+                    return (parseFloat(this.form.count) || 0) * (parseFloat(this.form.price) || 0);
                 },
 
                 get groupedItems() {
-                    // البحث والترتيب
                     let filtered = this.items.filter(i => 
-                        i.item.includes(this.searchQuery) || i.program.includes(this.searchQuery)
+                        i.program.toLowerCase().includes(this.searchQuery.toLowerCase()) || 
+                        i.item.toLowerCase().includes(this.searchQuery.toLowerCase())
                     );
                     
                     filtered.sort((a, b) => {
-                        let valA = a[this.sortCol]; let valB = b[this.sortCol];
+                        let valA = a[this.sortCol], valB = b[this.sortCol];
                         if (valA < valB) return this.sortAsc ? -1 : 1;
                         if (valA > valB) return this.sortAsc ? 1 : -1;
                         return 0;
                     });
 
-                    // تجميع (Grouping) حسب اسم البرنامج
                     return filtered.reduce((groups, item) => {
                         if (!groups[item.program]) groups[item.program] = [];
                         groups[item.program].push(item);
@@ -226,15 +226,15 @@
                 },
 
                 get grandTotal() {
-                    return this.items.reduce((sum, item) => sum + (parseFloat(item.total) || 0), 0);
+                    return this.items.reduce((sum, i) => sum + (parseFloat(i.total) || 0), 0);
                 },
 
-                calculateProgramTotal(programItems) {
-                    return programItems.reduce((sum, item) => sum + (parseFloat(item.total) || 0), 0);
+                calculateSubtotal(group) {
+                    return group.reduce((sum, i) => sum + (parseFloat(i.total) || 0), 0);
                 },
 
                 formatCurrency(val) {
-                    return Number(val).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                    return Number(val).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ج.م';
                 },
 
                 sortBy(col) {
@@ -242,82 +242,84 @@
                     else { this.sortCol = col; this.sortAsc = true; }
                 },
 
+                showToast(msg, type = 'success') {
+                    this.toast = { show: true, message: msg, type: type };
+                    setTimeout(() => this.toast.show = false, 3000);
+                },
+
                 resetForm() {
                     this.form = { id: null, program: '', item: '', count: '', price: '' };
                 },
 
-                editItem(item) {
-                    this.form = { 
-                        id: item.id, program: item.program, item: item.item, 
-                        count: item.count, price: item.price 
-                    };
+                editEntry(entry) {
+                    this.form = { ...entry };
                     window.scrollTo({ top: 0, behavior: 'smooth' });
                 },
 
-                saveData() {
-                    if (!this.form.program || !this.form.item || !this.form.count || !this.form.price) return;
-                    
-                    this.isLoading = true;
-                    let payload = {
-                        id: this.form.id,
-                        program: this.form.program,
-                        item: this.form.item,
-                        count: parseFloat(this.form.count),
-                        price: parseFloat(this.form.price),
-                        total: this.calculatedTotal
+                async saveEntry() {
+                    this.loading = true;
+                    const payload = {
+                        action: 'save',
+                        data: { ...this.form, total: this.calculatedTotal }
                     };
 
-                    google.script.run.withSuccessHandler(res => {
-                        if (this.form.id) {
-                            // تحديث محلي
-                            let idx = this.items.findIndex(i => i.id === res.id);
-                            if(idx > -1) this.items[idx] = res;
-                            this.showToast('تم تحديث البيانات بنجاح');
-                        } else {
-                            // إضافة محلي
-                            this.items.push(res);
-                            this.showToast('تمت الإضافة بنجاح');
+                    try {
+                        const res = await fetch(API_URL, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                            body: JSON.stringify(payload)
+                        });
+                        const result = await res.json();
+                        
+                        if (result.success) {
+                            if (this.form.id) {
+                                const index = this.items.findIndex(i => i.id === result.data.id);
+                                this.items[index] = result.data;
+                                this.showToast('تم تحديث البيانات');
+                            } else {
+                                this.items.push(result.data);
+                                this.showToast('تمت الإضافة بنجاح');
+                            }
+                            this.resetForm();
                         }
-                        this.resetForm();
-                        this.isLoading = false;
-                    }).withFailureHandler(err => {
-                        this.showToast('حدث خطأ أثناء الحفظ', 'error');
-                        this.isLoading = false;
-                    }).saveOrUpdateData(payload);
+                    } catch (e) {
+                        this.showToast('خطأ في الاتصال بالخادم', 'error');
+                    } finally {
+                        this.loading = false;
+                    }
                 },
 
-                deleteItem(id) {
-                    if(!confirm('هل أنت متأكد من حذف هذا البيان؟')) return;
-                    
-                    google.script.run.withSuccessHandler(success => {
-                        if(success) {
+                async deleteEntry(id) {
+                    if (!confirm('هل أنت متأكد من الحذف؟')) return;
+                    try {
+                        const res = await fetch(API_URL, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                            body: JSON.stringify({ action: 'delete', id: id })
+                        });
+                        const result = await res.json();
+                        if (result.success) {
                             this.items = this.items.filter(i => i.id !== id);
                             this.showToast('تم الحذف بنجاح');
                         }
-                    }).deleteData(id);
+                    } catch (e) {
+                        this.showToast('فشل في الحذف', 'error');
+                    }
                 },
 
                 exportCSV() {
-                    if (this.items.length === 0) {
-                        this.showToast('لا توجد بيانات للتصدير', 'error');
-                        return;
-                    }
-                    
-                    // استخدام UTF-8 BOM لدعم اللغة العربية في Excel
-                    let csvContent = '\uFEFFالبرنامج,البيان,العدد,السعر,المبلغ\n';
-                    
-                    Object.keys(this.groupedItems).forEach(program => {
-                        this.groupedItems[program].forEach(row => {
-                            let cleanItem = row.item.replace(/,/g, '،'); 
-                            csvContent += `${row.program},${cleanItem},${row.count},${row.price},${row.total}\n`;
+                    if (!this.items.length) return;
+                    let csv = '\uFEFFالبرنامج,البيان,العدد,السعر,المجموع\n';
+                    Object.keys(this.groupedItems).forEach(prog => {
+                        this.groupedItems[prog].forEach(row => {
+                            csv += `${row.program},${row.item},${row.count},${row.price},${row.total}\n`;
                         });
-                        csvContent += `إجمالي ${program},,,,${this.calculateProgramTotal(this.groupedItems[program])}\n`;
+                        csv += `إجمالي ${prog},,,,${this.calculateSubtotal(this.groupedItems[prog])}\n`;
                     });
-
-                    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
                     const link = document.createElement("a");
                     link.href = URL.createObjectURL(blob);
-                    link.download = `بيانات_المشاريع_${new Date().toISOString().split('T')[0]}.csv`;
+                    link.download = `Budget_Report_${new Date().toISOString().split('T')[0]}.csv`;
                     link.click();
                 }
             }
