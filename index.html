@@ -7,139 +7,222 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;700;900&display=swap');
-        body { font-family: 'Tajawal', sans-serif; }
-        [x-cloak] { display: none !important; }
+        @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;900&display=swap');
         
-        @media print {
-            .no-print { display: none !important; }
-            .print-header { display: block !important; }
-            body { background: white; padding: 0; }
-            .table-container { box-shadow: none; border: 1px solid black; }
-            th { background-color: #f0f0f0 !important; color: black !important; border: 1px solid black; }
-            td { border: 1px solid black; }
+        body { 
+            font-family: 'Tajawal', sans-serif; 
+            background-color: #f3f4f6;
         }
-        .print-header { display: none; text-align: center; margin-bottom: 20px; border-bottom: 2px solid #000; padding-bottom: 10px; }
+        
+        [x-cloak] { display: none !important; }
+
+        /* إعدادات الطباعة المتقدمة A4 */
+        @page {
+            size: A4;
+            margin: 15mm;
+        }
+
+        @media print {
+            body { 
+                background: white; 
+                padding: 0; 
+                -webkit-print-color-adjust: exact !important; 
+                print-color-adjust: exact !important; 
+            }
+            .no-print { display: none !important; }
+            .print-header { display: flex !important; }
+            
+            /* منع انقسام الصفوف بين الصفحات */
+            table { page-break-inside: auto; }
+            tr { page-break-inside: avoid; page-break-after: auto; }
+            thead { display: table-header-group; }
+            tfoot { display: table-footer-group; }
+            
+            /* إزالة الظلال للطباعة وتحسين الحواف */
+            .table-container { 
+                box-shadow: none !important; 
+                border: 1px solid #cbd5e1; 
+                border-radius: 0;
+            }
+        }
+
+        .print-header { 
+            display: none; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 2rem; 
+            border-bottom: 3px solid #1e293b; 
+            padding-bottom: 1rem; 
+        }
+
+        /* تحسينات الإدخال (Inputs) */
+        input:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+            border-color: #4f46e5;
+        }
     </style>
 </head>
-<body class="bg-gray-100 p-4 md:p-8" x-data="budgetApp()">
+<body class="p-4 md:p-8" x-data="budgetApp()">
 
     <div class="print-header">
-        <div class="flex justify-between items-center px-10">
-            <div class="text-right">
-                <h1 class="text-2xl font-black">جمعية مصر بكرة للتنمية</h1>
-                <p>مشروع عرب أبو ساعد</p>
-                <p x-text="'ميزانية عام: ' + selectedYear"></p>
-            </div>
-            <img src="https://via.placeholder.com/100" alt="Logo" class="h-20"> </div>
+        <div class="text-right">
+            <h1 class="text-3xl font-black text-slate-800 mb-1">جمعية مصر بكرة للتنمية</h1>
+            <p class="text-lg font-bold text-slate-600">مشروع عرب أبو ساعد</p>
+            <p class="text-md font-medium text-slate-500 mt-2" x-text="'ميزانية عام: ' + selectedYear"></p>
+        </div>
+        <img src="https://via.placeholder.com/120?text=Logo" alt="شعار الجمعية" class="h-24 rounded-lg"> 
     </div>
 
-    <div class="max-w-6xl mx-auto">
-        <div class="no-print flex flex-wrap justify-between items-center mb-6 gap-4 bg-white p-6 rounded-2xl shadow-sm">
-            <div class="flex items-center gap-4">
-                <label class="font-bold">سنة الميزانية:</label>
-                <select x-model="selectedYear" class="border p-2 rounded-lg bg-gray-50 outline-none focus:ring-2 focus:ring-blue-500">
-                    <option value="2024">2024</option>
-                    <option value="2025">2025</option>
-                    <option value="2026">2026</option>
-                </select>
+    <div class="max-w-7xl mx-auto">
+        
+        <div class="no-print bg-white p-5 rounded-2xl shadow-sm border border-gray-100 flex flex-wrap justify-between items-center mb-6 gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-indigo-50 p-3 rounded-xl text-indigo-600">
+                    <i class="fa-solid fa-calendar-days text-xl"></i>
+                </div>
+                <div>
+                    <label class="block text-sm font-bold text-gray-500 mb-1">سنة الميزانية</label>
+                    <input type="number" x-model="selectedYear" placeholder="أدخل العام (مثال: 2024)" 
+                           class="border border-gray-300 px-4 py-2 rounded-lg bg-gray-50 w-48 font-bold text-slate-800 transition">
+                </div>
             </div>
             
-            <div class="flex gap-2">
-                <button @click="isManualEdit = !isManualEdit" :class="isManualEdit ? 'bg-orange-500' : 'bg-gray-600'" 
-                        class="text-white px-4 py-2 rounded-lg font-bold transition flex items-center gap-2">
-                    <i class="fa-solid fa-pen-to-square"></i>
-                    <span x-text="isManualEdit ? 'إيقاف التعديل' : 'تعديل يدوياً'"></span>
+            <div class="flex flex-wrap gap-3">
+                <button @click="isManualEdit = !isManualEdit" 
+                        :class="isManualEdit ? 'bg-orange-500 hover:bg-orange-600 ring-4 ring-orange-100' : 'bg-slate-700 hover:bg-slate-800'" 
+                        class="text-white px-5 py-2.5 rounded-xl font-bold transition-all duration-200 flex items-center gap-2 shadow-sm">
+                    <i class="fa-solid" :class="isManualEdit ? 'fa-pen-slash' : 'fa-pen-to-square'"></i>
+                    <span x-text="isManualEdit ? 'إيقاف التعديل اليدوي' : 'تعديل البيانات يدوياً'"></span>
                 </button>
-                <button @click="window.print()" class="bg-blue-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-blue-700">
-                    <i class="fa-solid fa-print ml-2"></i> طباعة الجدول
+                <button @click="window.print()" 
+                        class="bg-indigo-600 text-white px-6 py-2.5 rounded-xl font-bold hover:bg-indigo-700 transition-all duration-200 flex items-center gap-2 shadow-sm shadow-indigo-200">
+                    <i class="fa-solid fa-print"></i> طباعة التقرير
                 </button>
             </div>
         </div>
 
-        <div class="no-print bg-white p-6 rounded-2xl shadow-sm mb-8">
-            <h2 class="font-black text-xl mb-4 border-b pb-2">إضافة بند مالي</h2>
-            <form @submit.prevent="saveEntry" class="grid grid-cols-1 md:grid-cols-5 gap-4">
-                <input type="text" x-model="form.program" placeholder="اسم البرنامج" required class="border p-3 rounded-xl bg-gray-50">
-                <input type="text" x-model="form.item" placeholder="البيان" required class="border p-3 rounded-xl bg-gray-50">
-                <input type="number" x-model.number="form.count" placeholder="العدد" required class="border p-3 rounded-xl bg-gray-50">
-                <input type="number" x-model.number="form.price" placeholder="السعر" required class="border p-3 rounded-xl bg-gray-50">
-                <button class="bg-green-600 text-white rounded-xl font-black hover:bg-green-700 transition">
-                    <span x-show="!loading">إضافة للجدول</span>
-                    <i x-show="loading" class="fa-solid fa-spinner fa-spin"></i>
-                </button>
+        <div class="no-print bg-white p-6 rounded-2xl shadow-sm border border-gray-100 mb-8 relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-2 h-full bg-indigo-500"></div>
+            <h2 class="font-black text-xl text-slate-800 mb-5 flex items-center gap-2">
+                <i class="fa-solid fa-plus-circle text-indigo-500"></i> إضافة بند مالي جديد
+            </h2>
+            <form @submit.prevent="saveEntry" class="grid grid-cols-1 md:grid-cols-12 gap-4">
+                <div class="md:col-span-3">
+                    <input type="text" x-model="form.program" placeholder="اسم البرنامج (مثال: الوجبات)" required class="w-full border border-gray-300 p-3.5 rounded-xl bg-gray-50 transition">
+                </div>
+                <div class="md:col-span-4">
+                    <input type="text" x-model="form.item" placeholder="البيان (تفاصيل البند)" required class="w-full border border-gray-300 p-3.5 rounded-xl bg-gray-50 transition">
+                </div>
+                <div class="md:col-span-2">
+                    <input type="number" x-model.number="form.count" placeholder="العدد" required class="w-full border border-gray-300 p-3.5 rounded-xl bg-gray-50 transition">
+                </div>
+                <div class="md:col-span-2">
+                    <input type="number" x-model.number="form.price" placeholder="السعر" required class="w-full border border-gray-300 p-3.5 rounded-xl bg-gray-50 transition">
+                </div>
+                <div class="md:col-span-1">
+                    <button type="submit" :disabled="loading" class="w-full h-full bg-emerald-500 text-white rounded-xl font-black hover:bg-emerald-600 transition disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center text-lg shadow-sm shadow-emerald-200">
+                        <span x-show="!loading"><i class="fa-solid fa-check"></i></span>
+                        <i x-show="loading" class="fa-solid fa-circle-notch fa-spin"></i>
+                    </button>
+                </div>
             </form>
         </div>
 
-        <div class="table-container bg-white rounded-2xl shadow-lg overflow-hidden">
+        <div class="table-container bg-white rounded-2xl shadow-lg border border-gray-200 overflow-x-auto">
             <table class="w-full text-right border-collapse">
-                <thead>
-                    <tr class="bg-slate-800 text-white">
-                        <th class="p-4 border-l border-slate-700">البيان</th>
-                        <th class="p-4 border-l border-slate-700">العدد</th>
-                        <th class="p-4 border-l border-slate-700">السعر</th>
-                        <th class="p-4 border-l border-slate-700">المبلغ</th>
-                        <th class="p-4 no-print">إجراءات</th>
+                <thead class="bg-slate-800 text-white">
+                    <tr>
+                        <th class="p-4 font-bold text-sm tracking-wide border-l border-slate-700 w-2/5">البيان</th>
+                        <th class="p-4 font-bold text-sm tracking-wide border-l border-slate-700 w-1/12 text-center">العدد</th>
+                        <th class="p-4 font-bold text-sm tracking-wide border-l border-slate-700 w-1/6 text-center">السعر</th>
+                        <th class="p-4 font-bold text-sm tracking-wide border-l border-slate-700 w-1/6 text-center">المبلغ</th>
+                        <th class="p-4 font-bold text-sm tracking-wide no-print w-1/12 text-center">إجراءات</th>
                     </tr>
                 </thead>
-                <tbody>
-                    <template x-for="(group, programName) in groupedItems" :key="programName">
-                        <template x-if="group.length > 0">
-                            <tbody>
-                                <tr class="bg-blue-100 border-b-2 border-blue-200">
-                                    <td colspan="5" class="p-3 font-black text-blue-900 text-lg">
-                                        <span x-text="programName"></span>
-                                    </td>
-                                </tr>
-                                <template x-for="entry in group" :key="entry.id">
-                                    <tr class="border-b hover:bg-gray-50 transition">
-                                        <td class="p-3">
-                                            <template x-if="!isManualEdit"><span x-text="entry.item"></span></template>
-                                            <template x-if="isManualEdit"><input type="text" x-model="entry.item" @change="updateEntry(entry)" class="w-full border p-1 rounded"></template>
-                                        </td>
-                                        <td class="p-3">
-                                            <template x-if="!isManualEdit"><span x-text="entry.count"></span></template>
-                                            <template x-if="isManualEdit"><input type="number" x-model.number="entry.count" @change="updateEntry(entry)" class="w-full border p-1 rounded"></template>
-                                        </td>
-                                        <td class="p-3">
-                                            <template x-if="!isManualEdit"><span x-text="entry.price"></span></template>
-                                            <template x-if="isManualEdit"><input type="number" x-model.number="entry.price" @change="updateEntry(entry)" class="w-full border p-1 rounded"></template>
-                                        </td>
-                                        <td class="p-3 font-bold" x-text="formatCurrency(entry.count * entry.price)"></td>
-                                        <td class="p-3 no-print text-center">
-                                            <button @click="deleteEntry(entry.id)" class="text-red-500 hover:scale-110 transition"><i class="fa-solid fa-trash"></i></button>
-                                        </td>
-                                    </tr>
-                                </template>
-                                <tr class="bg-gray-50">
-                                    <td colspan="3" class="p-3 text-left font-bold text-gray-600">إجمالي <span x-text="programName"></span></td>
-                                    <td class="p-3 font-black text-blue-700" x-text="formatCurrency(calculateSubtotal(group))"></td>
-                                    <td class="no-print"></td>
-                                </tr>
-                            </tbody>
+                
+                <template x-for="(group, programName) in groupedItems" :key="programName">
+                    <tbody x-show="group.length > 0" class="border-b-4 border-gray-200">
+                        
+                        <tr class="bg-indigo-50 border-b border-indigo-100">
+                            <td colspan="5" class="p-4 font-black text-indigo-900 text-lg">
+                                <div class="flex items-center gap-2">
+                                    <i class="fa-solid fa-layer-group text-indigo-400"></i>
+                                    <span x-text="programName"></span>
+                                </div>
+                            </td>
+                        </tr>
+                        
+                        <template x-for="entry in group" :key="entry.id">
+                            <tr class="border-b border-gray-100 hover:bg-gray-50/80 transition-colors duration-150">
+                                <td class="p-4">
+                                    <template x-if="!isManualEdit"><span class="font-medium text-slate-700" x-text="entry.item"></span></template>
+                                    <template x-if="isManualEdit"><input type="text" x-model="entry.item" @change="updateEntry(entry)" class="w-full border border-gray-300 p-2 rounded-lg focus:ring-2 focus:ring-indigo-400 bg-white"></template>
+                                </td>
+                                <td class="p-4 text-center">
+                                    <template x-if="!isManualEdit"><span class="font-bold text-slate-600" x-text="entry.count"></span></template>
+                                    <template x-if="isManualEdit"><input type="number" x-model.number="entry.count" @change="updateEntry(entry)" class="w-full text-center border border-gray-300 p-2 rounded-lg bg-white"></template>
+                                </td>
+                                <td class="p-4 text-center">
+                                    <template x-if="!isManualEdit"><span class="font-bold text-slate-600" x-text="entry.price"></span></template>
+                                    <template x-if="isManualEdit"><input type="number" x-model.number="entry.price" @change="updateEntry(entry)" class="w-full text-center border border-gray-300 p-2 rounded-lg bg-white"></template>
+                                </td>
+                                <td class="p-4 text-center font-black text-slate-800 bg-slate-50/50" x-text="formatCurrency(entry.count * entry.price)"></td>
+                                <td class="p-4 no-print text-center">
+                                    <button @click="deleteEntry(entry.id)" title="حذف البند" class="text-gray-400 hover:text-red-500 hover:bg-red-50 p-2 rounded-lg transition-all">
+                                        <i class="fa-solid fa-trash-can"></i>
+                                    </button>
+                                </td>
+                            </tr>
                         </template>
-                    </template>
-                </tbody>
-                <tfoot class="border-t-4 border-double border-slate-800 bg-slate-50">
-                    <tr>
-                        <td colspan="3" class="p-4 text-left font-black text-lg">إجمالي كافة البرامج</td>
-                        <td class="p-4 font-black text-lg" x-text="formatCurrency(grandTotal)"></td>
+                        
+                        <tr class="bg-gray-100/70 border-t border-gray-200">
+                            <td colspan="3" class="p-4 text-left font-bold text-gray-600">
+                                إجمالي <span class="text-indigo-700" x-text="programName"></span>:
+                            </td>
+                            <td class="p-4 text-center font-black text-indigo-700 text-lg" x-text="formatCurrency(calculateSubtotal(group))"></td>
+                            <td class="no-print"></td>
+                        </tr>
+                    </tbody>
+                </template>
+
+                <tfoot class="bg-slate-50">
+                    <tr class="border-t border-gray-300">
+                        <td colspan="3" class="p-5 text-left font-black text-slate-700 text-lg">إجمالي كافة البرامج:</td>
+                        <td class="p-5 text-center font-black text-slate-800 text-xl" x-text="formatCurrency(grandTotal)"></td>
                         <td class="no-print"></td>
                     </tr>
-                    <tr class="text-gray-600 italic">
-                        <td colspan="3" class="p-4 text-left font-bold">المصاريف الإدارية (10%)</td>
-                        <td class="p-4 font-bold" x-text="formatCurrency(adminFees)"></td>
+                    <tr class="bg-gray-100 border-t border-gray-200">
+                        <td colspan="3" class="p-4 text-left font-bold text-gray-600">المصاريف الإدارية (10%):</td>
+                        <td class="p-4 text-center font-bold text-gray-700 text-lg" x-text="formatCurrency(adminFees)"></td>
                         <td class="no-print"></td>
                     </tr>
-                    <tr class="bg-slate-800 text-white">
-                        <td colspan="3" class="p-5 text-left font-black text-xl uppercase tracking-widest">الإجمالي العام المستهدف</td>
-                        <td class="p-5 font-black text-2xl" x-text="formatCurrency(finalTotal)"></td>
-                        <td class="no-print"></td>
+                    <tr class="bg-slate-800 text-white border-t-4 border-indigo-500">
+                        <td colspan="3" class="p-6 text-left font-black text-2xl tracking-wide">الإجمالي العام المستهدف:</td>
+                        <td class="p-6 text-center font-black text-3xl text-emerald-400 drop-shadow-md" x-text="formatCurrency(finalTotal)"></td>
+                        <td class="no-print bg-slate-800"></td>
                     </tr>
                 </tfoot>
             </table>
         </div>
+        
+        <div class="print-header !border-none !mt-12 !mb-0 hidden flex-row justify-between px-10 text-center font-bold text-lg">
+            <div>
+                <p class="mb-8">إعداد / محاسب المشروع</p>
+                <p>.............................</p>
+            </div>
+            <div>
+                <p class="mb-8">مراجعة / مدير المشروع</p>
+                <p>.............................</p>
+            </div>
+            <div>
+                <p class="mb-8">اعتماد / رئيس مجلس الإدارة</p>
+                <p>.............................</p>
+            </div>
+        </div>
+
     </div>
 
     <script>
@@ -149,7 +232,7 @@
             return {
                 loading: false,
                 isManualEdit: false,
-                selectedYear: '2025',
+                selectedYear: new Date().getFullYear().toString(), // القيمة الافتراضية هي السنة الحالية
                 items: [],
                 form: { program: '', item: '', count: '', price: '' },
 
@@ -164,7 +247,7 @@
                         const data = await res.json();
                         // فلترة البيانات حسب السنة المختارة فقط
                         this.items = data.filter(i => i.year == this.selectedYear);
-                    } catch (e) { alert('خطأ في جلب البيانات'); }
+                    } catch (e) { alert('خطأ في جلب البيانات. يرجى التأكد من اتصال الإنترنت وصلاحيات الرابط.'); }
                 },
 
                 get groupedItems() {
@@ -208,7 +291,7 @@
                 },
 
                 async deleteEntry(id) {
-                    if (confirm('حذف هذا البند؟')) {
+                    if (confirm('هل أنت متأكد من حذف هذا البند نهائياً؟')) {
                         await this.apiCall({ action: 'delete', id: id });
                         await this.fetchData();
                     }
@@ -221,7 +304,7 @@
                             headers: { 'Content-Type': 'text/plain' },
                             body: JSON.stringify(payload)
                         });
-                    } catch (e) { console.error(e); }
+                    } catch (e) { console.error('API Error:', e); }
                 }
             }
         }
