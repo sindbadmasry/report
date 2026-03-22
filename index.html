@@ -1,73 +1,327 @@
-const SHEET_NAME = 'Data';
+<!DOCTYPE html>
+<html lang="ar" dir="rtl" class="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إدارة البرامج والبيانات</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: { extend: { fontFamily: { sans: ['Segoe UI', 'Tahoma', 'sans-serif'] } } }
+        }
+    </script>
+    <style>
+        [x-cloak] { display: none !important; }
+        .table-row-anim { transition: all 0.3s ease; }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800 dark:bg-gray-900 dark:text-gray-100 transition-colors duration-300 min-h-screen">
 
-function doGet() {
-  return HtmlService.createHtmlOutputFromFile('Index')
-    .setTitle('نظام إدارة البرامج والبيانات')
-    .setXFrameOptionsMode(HtmlService.XFrameOptionsMode.ALLOWALL);
-}
+    <div x-data="app()" x-init="initApp()" class="max-w-7xl mx-auto p-4 sm:p-6 lg:p-8">
+        
+        <header class="flex flex-col sm:flex-row justify-between items-center mb-8 gap-4">
+            <h1 class="text-2xl font-bold text-blue-700 dark:text-blue-400 flex items-center gap-2">
+                <i class="fa-solid fa-table-list"></i> لوحة إدارة البرامج
+            </h1>
+            <div class="flex items-center gap-3">
+                <button @click="exportCSV()" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg shadow transition flex items-center gap-2">
+                    <i class="fa-solid fa-file-csv"></i> تصدير البيانات
+                </button>
+                <button @click="toggleDarkMode()" class="p-2 rounded-full bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 transition">
+                    <i class="fa-solid" :class="isDark ? 'fa-sun text-yellow-400' : 'fa-moon text-gray-700'"></i>
+                </button>
+            </div>
+        </header>
 
-// دالة لجلب ورقة العمل أو إنشائها
-function getSheet() {
-  let ss = SpreadsheetApp.getActiveSpreadsheet();
-  let sheet = ss.getSheetByName(SHEET_NAME);
-  if (!sheet) {
-    sheet = ss.insertSheet(SHEET_NAME);
-    // إنشاء العناوين الأساسية
-    sheet.appendRow(['ID', 'Date', 'Program', 'Item', 'Count', 'Price', 'Total']);
-    sheet.getRange('A1:G1').setFontWeight('bold').setBackground('#f3f4f6');
-  }
-  return sheet;
-}
+        <div x-show="toast.show" x-transition.opacity.duration.300ms x-cloak
+             class="fixed top-5 left-1/2 transform -translate-x-1/2 z-50 px-6 py-3 rounded-lg shadow-lg text-white font-semibold flex items-center gap-2"
+             :class="toast.type === 'success' ? 'bg-green-500' : (toast.type === 'error' ? 'bg-red-500' : 'bg-blue-500')">
+            <i class="fa-solid" :class="toast.type === 'success' ? 'fa-check-circle' : 'fa-info-circle'"></i>
+            <span x-text="toast.message"></span>
+        </div>
 
-// دالة التهيئة المبدئية لجلب البيانات
-function initData() {
-  const sheet = getSheet();
-  const data = sheet.getDataRange().getValues();
-  if (data.length <= 1) return [];
-  
-  const rows = data.slice(1);
-  return rows.map(r => ({
-    id: r[0].toString(),
-    date: r[1],
-    program: r[2],
-    item: r[3],
-    count: parseFloat(r[4]) || 0,
-    price: parseFloat(r[5]) || 0,
-    total: parseFloat(r[6]) || 0
-  }));
-}
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 lg:col-span-1 h-fit">
+                <h2 class="text-xl font-bold mb-5 flex items-center gap-2 border-b pb-3 dark:border-gray-700">
+                    <i class="fa-solid fa-pen-to-square text-blue-500"></i>
+                    <span x-text="form.id ? 'تعديل البيان' : 'إضافة بيان جديد'"></span>
+                </h2>
+                
+                <form @submit.prevent="saveData" class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-semibold mb-1">اسم البرنامج</label>
+                        <input type="text" x-model="form.program" required placeholder="مثال: برنامج التعليم"
+                               class="w-full p-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 outline-none transition">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold mb-1">البيان (البند)</label>
+                        <input type="text" x-model="form.item" required placeholder="مثال: أدوات مكتبية"
+                               class="w-full p-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 outline-none transition">
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold mb-1">العدد</label>
+                            <input type="number" step="any" x-model.number="form.count" required
+                                   class="w-full p-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 outline-none transition">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold mb-1">السعر</label>
+                            <input type="number" step="any" x-model.number="form.price" required
+                                   class="w-full p-2.5 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 outline-none transition">
+                        </div>
+                    </div>
+                    
+                    <div class="bg-blue-50 dark:bg-blue-900/30 p-3 rounded-lg flex justify-between items-center mt-2 border border-blue-100 dark:border-blue-800">
+                        <span class="font-bold text-blue-800 dark:text-blue-300">المبلغ الإجمالي:</span>
+                        <span class="font-bold text-lg text-blue-800 dark:text-blue-300" x-text="calculatedTotal + ' ج.م'"></span>
+                    </div>
 
-// دالة إضافة أو تحديث البيانات
-function saveOrUpdateData(obj) {
-  const sheet = getSheet();
-  const dateStr = new Date().toISOString().split('T')[0];
-  
-  // إذا كان هناك ID، فهذا يعني أنه تعديل
-  if (obj.id) {
-    const data = sheet.getDataRange().getValues();
-    for (let i = 1; i < data.length; i++) {
-      if (data[i][0].toString() === obj.id.toString()) {
-        sheet.getRange(i + 1, 3, 1, 5).setValues([[obj.program, obj.item, obj.count, obj.price, obj.total]]);
-        return obj;
-      }
-    }
-  } 
-  
-  // إذا لم يكن هناك ID، إضافة صف جديد
-  const newId = new Date().getTime().toString();
-  sheet.appendRow([newId, dateStr, obj.program, obj.item, obj.count, obj.price, obj.total]);
-  return { id: newId, date: dateStr, ...obj };
-}
+                    <div class="pt-4 flex gap-2">
+                        <button type="submit" :disabled="isLoading" 
+                                class="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2.5 rounded-lg font-bold shadow transition flex justify-center items-center gap-2 disabled:opacity-50">
+                            <span x-show="!isLoading" x-text="form.id ? 'حفظ التعديلات' : 'إضافة للجدول'"></span>
+                            <i x-show="isLoading" class="fa-solid fa-spinner fa-spin"></i>
+                        </button>
+                        <button type="button" x-show="form.id" @click="resetForm()" 
+                                class="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2.5 rounded-lg font-bold shadow transition">
+                            إلغاء
+                        </button>
+                    </div>
+                </form>
+            </div>
 
-// دالة الحذف
-function deleteData(id) {
-  const sheet = getSheet();
-  const data = sheet.getDataRange().getValues();
-  for (let i = 1; i < data.length; i++) {
-    if (data[i][0].toString() === id.toString()) {
-      sheet.deleteRow(i + 1);
-      return true;
-    }
-  }
-  return false;
-}
+            <div class="bg-white dark:bg-gray-800 p-6 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 lg:col-span-2">
+                
+                <div class="flex flex-col sm:flex-row justify-between items-center mb-4 gap-4">
+                    <div class="relative w-full sm:w-1/2">
+                        <i class="fa-solid fa-search absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400"></i>
+                        <input type="text" x-model="searchQuery" placeholder="ابحث في البرامج والبيانات..."
+                               class="w-full p-2 pr-10 rounded-lg border border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 focus:ring-2 focus:ring-blue-500 outline-none transition">
+                    </div>
+                    <div class="bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 px-4 py-2 rounded-lg font-bold whitespace-nowrap border border-green-200 dark:border-green-800">
+                        إجمالي المشاريع: <span x-text="formatCurrency(grandTotal)"></span>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto rounded-lg border border-gray-200 dark:border-gray-700">
+                    <table class="w-full text-right border-collapse">
+                        <thead>
+                            <tr class="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-b dark:border-gray-600">
+                                <th class="p-3 whitespace-nowrap cursor-pointer hover:bg-gray-200 dark:hover:bg-gray-600" @click="sortBy('item')">البيان <i class="fa-solid fa-sort text-xs opacity-50"></i></th>
+                                <th class="p-3 whitespace-nowrap">العدد</th>
+                                <th class="p-3 whitespace-nowrap">السعر</th>
+                                <th class="p-3 whitespace-nowrap text-left">المبلغ</th>
+                                <th class="p-3 whitespace-nowrap text-center">إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template x-if="Object.keys(groupedItems).length === 0">
+                                <tr><td colspan="5" class="p-8 text-center text-gray-500">لا توجد بيانات متاحة.</td></tr>
+                            </template>
+                            
+                            <template x-for="(group, programName) in groupedItems" :key="programName">
+                                <template x-if="group.length > 0">
+                                    <tbody class="border-b-2 border-gray-300 dark:border-gray-600">
+                                        <tr class="bg-blue-50 dark:bg-blue-900/20">
+                                            <td colspan="5" class="p-3 font-bold text-blue-800 dark:text-blue-300">
+                                                <i class="fa-solid fa-folder-open ml-2"></i> <span x-text="programName"></span>
+                                            </td>
+                                        </tr>
+                                        
+                                        <template x-for="item in group" :key="item.id">
+                                            <tr class="border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-750 table-row-anim">
+                                                <td class="p-3 text-gray-800 dark:text-gray-200" x-text="item.item"></td>
+                                                <td class="p-3 text-gray-600 dark:text-gray-400" x-text="item.count"></td>
+                                                <td class="p-3 text-gray-600 dark:text-gray-400" x-text="item.price"></td>
+                                                <td class="p-3 font-semibold text-left text-gray-800 dark:text-gray-200" x-text="formatCurrency(item.total)"></td>
+                                                <td class="p-3 text-center space-x-2 space-x-reverse">
+                                                    <button @click="editItem(item)" class="text-blue-500 hover:text-blue-700 p-1" title="تعديل"><i class="fa-solid fa-edit"></i></button>
+                                                    <button @click="deleteItem(item.id)" class="text-red-500 hover:text-red-700 p-1" title="حذف"><i class="fa-solid fa-trash"></i></button>
+                                                </td>
+                                            </tr>
+                                        </template>
+
+                                        <tr class="bg-gray-50 dark:bg-gray-800/50">
+                                            <td colspan="3" class="p-3 font-bold text-left text-gray-700 dark:text-gray-300">إجمالي <span x-text="programName"></span>:</td>
+                                            <td colspan="2" class="p-3 font-bold text-left text-green-700 dark:text-green-400" x-text="formatCurrency(calculateProgramTotal(group))"></td>
+                                        </tr>
+                                    </tbody>
+                                </template>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function app() {
+            return {
+                isDark: false,
+                isLoading: false,
+                items: [],
+                searchQuery: '',
+                sortCol: 'item',
+                sortAsc: true,
+                form: { id: null, program: '', item: '', count: '', price: '' },
+                toast: { show: false, message: '', type: 'success' },
+
+                initApp() {
+                    // فحص الوضع الليلي المفضل
+                    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                        this.isDark = true;
+                        document.documentElement.classList.add('dark');
+                    }
+                    // دالة الـ Init لجلب البيانات
+                    google.script.run.withSuccessHandler(data => {
+                        this.items = data;
+                    }).initData();
+                },
+
+                toggleDarkMode() {
+                    this.isDark = !this.isDark;
+                    if (this.isDark) {
+                        document.documentElement.classList.add('dark');
+                    } else {
+                        document.documentElement.classList.remove('dark');
+                    }
+                },
+
+                showToast(msg, type = 'success') {
+                    this.toast = { show: true, message: msg, type: type };
+                    setTimeout(() => this.toast.show = false, 3000);
+                },
+
+                get calculatedTotal() {
+                    let c = parseFloat(this.form.count) || 0;
+                    let p = parseFloat(this.form.price) || 0;
+                    return c * p;
+                },
+
+                get groupedItems() {
+                    // البحث والترتيب
+                    let filtered = this.items.filter(i => 
+                        i.item.includes(this.searchQuery) || i.program.includes(this.searchQuery)
+                    );
+                    
+                    filtered.sort((a, b) => {
+                        let valA = a[this.sortCol]; let valB = b[this.sortCol];
+                        if (valA < valB) return this.sortAsc ? -1 : 1;
+                        if (valA > valB) return this.sortAsc ? 1 : -1;
+                        return 0;
+                    });
+
+                    // تجميع (Grouping) حسب اسم البرنامج
+                    return filtered.reduce((groups, item) => {
+                        if (!groups[item.program]) groups[item.program] = [];
+                        groups[item.program].push(item);
+                        return groups;
+                    }, {});
+                },
+
+                get grandTotal() {
+                    return this.items.reduce((sum, item) => sum + (parseFloat(item.total) || 0), 0);
+                },
+
+                calculateProgramTotal(programItems) {
+                    return programItems.reduce((sum, item) => sum + (parseFloat(item.total) || 0), 0);
+                },
+
+                formatCurrency(val) {
+                    return Number(val).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+                },
+
+                sortBy(col) {
+                    if (this.sortCol === col) this.sortAsc = !this.sortAsc;
+                    else { this.sortCol = col; this.sortAsc = true; }
+                },
+
+                resetForm() {
+                    this.form = { id: null, program: '', item: '', count: '', price: '' };
+                },
+
+                editItem(item) {
+                    this.form = { 
+                        id: item.id, program: item.program, item: item.item, 
+                        count: item.count, price: item.price 
+                    };
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                },
+
+                saveData() {
+                    if (!this.form.program || !this.form.item || !this.form.count || !this.form.price) return;
+                    
+                    this.isLoading = true;
+                    let payload = {
+                        id: this.form.id,
+                        program: this.form.program,
+                        item: this.form.item,
+                        count: parseFloat(this.form.count),
+                        price: parseFloat(this.form.price),
+                        total: this.calculatedTotal
+                    };
+
+                    google.script.run.withSuccessHandler(res => {
+                        if (this.form.id) {
+                            // تحديث محلي
+                            let idx = this.items.findIndex(i => i.id === res.id);
+                            if(idx > -1) this.items[idx] = res;
+                            this.showToast('تم تحديث البيانات بنجاح');
+                        } else {
+                            // إضافة محلي
+                            this.items.push(res);
+                            this.showToast('تمت الإضافة بنجاح');
+                        }
+                        this.resetForm();
+                        this.isLoading = false;
+                    }).withFailureHandler(err => {
+                        this.showToast('حدث خطأ أثناء الحفظ', 'error');
+                        this.isLoading = false;
+                    }).saveOrUpdateData(payload);
+                },
+
+                deleteItem(id) {
+                    if(!confirm('هل أنت متأكد من حذف هذا البيان؟')) return;
+                    
+                    google.script.run.withSuccessHandler(success => {
+                        if(success) {
+                            this.items = this.items.filter(i => i.id !== id);
+                            this.showToast('تم الحذف بنجاح');
+                        }
+                    }).deleteData(id);
+                },
+
+                exportCSV() {
+                    if (this.items.length === 0) {
+                        this.showToast('لا توجد بيانات للتصدير', 'error');
+                        return;
+                    }
+                    
+                    // استخدام UTF-8 BOM لدعم اللغة العربية في Excel
+                    let csvContent = '\uFEFFالبرنامج,البيان,العدد,السعر,المبلغ\n';
+                    
+                    Object.keys(this.groupedItems).forEach(program => {
+                        this.groupedItems[program].forEach(row => {
+                            let cleanItem = row.item.replace(/,/g, '،'); 
+                            csvContent += `${row.program},${cleanItem},${row.count},${row.price},${row.total}\n`;
+                        });
+                        csvContent += `إجمالي ${program},,,,${this.calculateProgramTotal(this.groupedItems[program])}\n`;
+                    });
+
+                    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                    const link = document.createElement("a");
+                    link.href = URL.createObjectURL(blob);
+                    link.download = `بيانات_المشاريع_${new Date().toISOString().split('T')[0]}.csv`;
+                    link.click();
+                }
+            }
+        }
+    </script>
+</body>
+</html>
