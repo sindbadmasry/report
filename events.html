@@ -3,11 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>تقرير المباراة الاحترافي</title>
+    <title>تقرير المباراة الرسمي - A4</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800;900&family=Oswald:wght@600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&family=Inter:wght@600;700;800&display=swap" rel="stylesheet">
     
     <script>
         tailwind.config = {
@@ -15,14 +15,15 @@
                 extend: {
                     fontFamily: {
                         sans: ['Tajawal', 'sans-serif'],
-                        score: ['Oswald', 'sans-serif'],
+                        num: ['Inter', 'sans-serif'],
                     },
                     colors: {
-                        brand: {
-                            dark: '#050B14',
-                            card: '#0D1627',
-                            primary: '#00F0FF',
-                            secondary: '#0047FF'
+                        print: {
+                            bg: '#FFFFFF',
+                            text: '#1F2937',
+                            accent: '#2563EB', /* Blue */
+                            border: '#E5E7EB',
+                            card: '#F9FAFB'
                         }
                     }
                 }
@@ -31,243 +32,293 @@
     </script>
 
     <style>
-        body { background-color: #050B14; }
-        
-        /* إخفاء أسهم الأرقام */
-        input[type="number"]::-webkit-inner-spin-button, 
-        input[type="number"]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-        
-        /* تأثيرات التركيز للحقول لتبدو كالنصوص العادية */
-        .editable-field {
-            transition: all 0.3s ease;
-            border: 1px dashed transparent;
+        /* إعدادات عامة للشاشة */
+        body { 
+            background-color: #F3F4F6; /* الرمادي الفاتح للخلفية بعيداً عن الورقة */
+            font-family: 'Tajawal', sans-serif;
+            color: #1F2937;
+            -webkit-font-smoothing: antialiased;
         }
-        .editable-field:hover, .editable-field:focus {
-            background-color: rgba(255, 255, 255, 0.05);
-            border-color: rgba(0, 240, 255, 0.3);
+        
+        /* تأثيرات الحقول القابلة للتعديل */
+        .editable {
+            transition: all 0.2s ease;
+            border: 1px solid transparent;
+            border-radius: 0.375rem; /* rounded-md */
+        }
+        .editable:hover {
+            background-color: #F3F4F6;
+            border-color: #D1D5DB;
+        }
+        .editable:focus {
+            background-color: #FFFFFF;
+            border-color: #2563EB;
             outline: none;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
         }
 
-        /* إعدادات طباعة A4 الاحترافية */
+        /* تنسيق الأرقام بوضوح */
+        .font-num { font-family: 'Inter', sans-serif; font-variant-numeric: tabular-nums; }
+
+        /* ========================================= */
+        /* == إعدادات الطباعة الـ A4 السحرية == */
+        /* ========================================= */
         @media print {
             @page {
-                size: A4;
-                margin: 0;
+                size: A4 portrait;
+                margin: 15mm; /* هوامش ضيقة لتسيع البيانات */
             }
             body {
-                background-color: #050B14 !important;
+                background-color: #FFFFFF !important;
+                margin: 0 !important;
+                padding: 0 !important;
                 -webkit-print-color-adjust: exact !important;
                 print-color-adjust: exact !important;
-                color-adjust: exact !important;
             }
             .no-print { display: none !important; }
-            .print-container {
+            
+            /* حاوية الورقة الرئيسية */
+            .print-paper {
                 width: 100% !important;
                 max-width: 100% !important;
+                margin: 0 !important;
+                padding: 0 !important;
                 border: none !important;
                 box-shadow: none !important;
                 border-radius: 0 !important;
-                min-height: 100vh;
-                padding: 20px !important;
+                background-color: #FFFFFF !important;
             }
-            .editable-field { border: none !important; background: transparent !important; }
+
+            /* تنسيق الحقول عند الطباعة (إزالة أي خلفيات أو حدود) */
+            .editable {
+                border: none !important;
+                background-color: transparent !important;
+                padding: 0 !important;
+                appearance: none !important; /* لإزالة أسهم الـ select */
+                -moz-appearance: none !important;
+                -webkit-appearance: none !important;
+            }
+            
+            /* إجبار تحديد الفريق على الاختفاء واستبداله بنص عادي */
+            select.editable { display: none !important; }
+            .print-team-label { display: block !important; }
+
+            /* تقليص حجم الأحداث لتناسب صفحة واحدة إذا كانت كثيرة */
+            .event-item {
+                padding-top: 0.5rem !important;
+                padding-bottom: 0.5rem !important;
+                margin-bottom: 0.5rem !important;
+                font-size: 0.875rem !important; /* text-sm */
+            }
+            .event-icon { font-size: 1.125rem !important; } /* text-lg */
         }
+
+        /* كلاس خاص لعرض اسم الفريق المطبوع فقط */
+        .print-team-label { display: none; }
     </style>
 </head>
-<body class="text-white min-h-screen flex flex-col items-center py-8 px-4" x-data="matchApp()">
+<body x-data="matchApp()">
 
-    <div class="w-full max-w-4xl flex justify-between items-center mb-6 no-print">
-        <h1 class="text-2xl font-black bg-clip-text text-transparent bg-gradient-to-r from-brand-primary to-brand-secondary">
-            لوحة تحكم المباراة
-        </h1>
+    <div class="w-full max-w-[210mm] mx-auto my-6 px-4 no-print flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-print-border">
+        <div class="flex items-center gap-3">
+            <i class="fa-solid fa-file-contract text-print-accent text-2xl"></i>
+            <h1 class="text-xl font-bold text-gray-800">محرر تقارير المباريات الرسمية</h1>
+        </div>
         <div class="flex gap-3">
-            <button @click="resetData()" class="px-4 py-2 rounded-lg bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white transition-colors border border-red-500/20 text-sm font-bold flex items-center gap-2">
-                <i class="fa-solid fa-rotate-right"></i> إعادة ضبط
+            <button @click="resetData()" class="px-4 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700 transition-colors text-sm font-semibold flex items-center gap-2">
+                <i class="fa-solid fa-trash-can"></i> مسح البيانات
             </button>
-            <button onclick="window.print()" class="px-6 py-2 rounded-lg bg-gradient-to-r from-brand-secondary to-brand-primary text-white hover:opacity-90 transition-opacity shadow-lg shadow-brand-primary/30 font-bold flex items-center gap-2">
-                <i class="fa-solid fa-print"></i> طباعة A4
+            <button onclick="window.print()" class="px-6 py-2 rounded-lg bg-print-accent hover:bg-blue-700 text-white transition-colors shadow-md shadow-blue-500/20 font-bold flex items-center gap-2">
+                <i class="fa-solid fa-print"></i> طباعة تقرير A4
             </button>
         </div>
     </div>
 
-    <div class="print-container w-full max-w-4xl bg-brand-card border border-white/10 rounded-[2rem] shadow-2xl shadow-brand-primary/10 overflow-hidden relative backdrop-blur-xl">
+    <div class="print-paper w-full max-w-[210mm] mx-auto bg-white border border-print-border shadow-xl rounded-sm overflow-hidden mb-12 p-[15mm] relative">
         
-        <div class="absolute top-0 inset-x-0 h-64 bg-gradient-to-b from-brand-secondary/20 to-transparent blur-3xl pointer-events-none"></div>
-
-        <div class="relative pt-8 pb-6 px-8 flex flex-col items-center border-b border-white/5">
-            <input type="text" x-model="match.league" class="editable-field w-full max-w-md text-center text-brand-primary font-black text-2xl tracking-wide rounded p-2 mb-2" placeholder="اسم البطولة">
-            <div class="flex justify-center items-center gap-4 text-slate-400 text-sm font-medium">
-                <div class="flex items-center gap-2">
-                    <i class="fa-regular fa-calendar text-brand-primary/70"></i>
-                    <input type="text" x-model="match.date" class="editable-field text-center w-36 rounded p-1" placeholder="التاريخ">
+        <div class="flex justify-between items-start border-b-2 border-print-accent pb-6 mb-8">
+            <div class="flex flex-col gap-1.5 flex-1">
+                <input type="text" x-model="match.league" class="editable font-extrabold text-2xl text-print-text px-2 py-1 -ml-2 w-full" placeholder="اسم البطولة/الدوري">
+                <div class="flex items-center gap-4 text-gray-600 text-sm mt-1">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-regular fa-calendar-days text-print-accent"></i>
+                        <input type="text" x-model="match.date" class="editable font-num px-1.5 py-0.5" placeholder="التاريخ">
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-location-dot text-print-accent"></i>
+                        <input type="text" x-model="match.stadium" class="editable px-1.5 py-0.5" placeholder="الملعب">
+                    </div>
                 </div>
-                <span class="w-1.5 h-1.5 rounded-full bg-slate-600"></span>
-                <div class="flex items-center gap-2">
-                    <i class="fa-solid fa-location-dot text-brand-primary/70"></i>
-                    <input type="text" x-model="match.stadium" class="editable-field text-center w-48 rounded p-1" placeholder="اسم الملعب">
-                </div>
+            </div>
+            <div class="text-left">
+                <div class="font-bold text-lg text-print-text">تقرير مباراة</div>
+                <div class="text-sm text-gray-500 font-num">REF: #<input type="text" x-model="match.refId" class="editable w-16 text-left" placeholder="000"></div>
             </div>
         </div>
 
-        <div class="relative flex flex-col md:flex-row justify-between items-center px-10 py-16 bg-gradient-to-b from-white/[0.02] to-transparent">
+        <div class="grid grid-cols-[1fr,auto,1fr] items-center gap-6 py-10 mb-8 bg-print-card rounded-xl border border-print-border px-8">
             
-            <div class="flex flex-col items-center w-full md:w-2/5 z-10">
-                <div class="relative group cursor-pointer mb-6">
-                    <div class="absolute inset-0 bg-brand-primary blur-xl opacity-20 group-hover:opacity-40 transition-opacity rounded-full"></div>
-                    <div class="w-32 h-32 bg-brand-dark/50 rounded-full flex items-center justify-center border border-white/10 relative z-10 backdrop-blur-sm">
-                        <i class="fa-solid fa-shield-cat text-6xl text-white/80"></i>
-                    </div>
+            <div class="flex flex-col items-center gap-3 text-center">
+                <div class="w-24 h-24 rounded-full bg-white border border-print-border flex items-center justify-center shadow-inner">
+                    <i class="fa-solid fa-shield-halved text-5xl text-gray-300"></i>
                 </div>
-                <input type="text" x-model="match.teamA" class="editable-field w-full text-center text-4xl font-black text-white rounded p-2" placeholder="الفريق المضيف">
+                <input type="text" x-model="match.teamA" class="editable w-full text-center text-3xl font-extrabold text-print-text px-2 py-1" placeholder="الفريق المضيف">
             </div>
 
-            <div class="flex items-center justify-center gap-6 w-full md:w-1/5 my-8 md:my-0 z-10">
-                <input type="text" x-model="match.scoreA" class="editable-field w-24 text-center text-8xl font-score font-bold text-white drop-shadow-[0_0_15px_rgba(0,240,255,0.5)] rounded p-0">
-                <div class="text-5xl font-black text-brand-primary/50 mb-4">:</div>
-                <input type="text" x-model="match.scoreB" class="editable-field w-24 text-center text-8xl font-score font-bold text-white drop-shadow-[0_0_15px_rgba(0,240,255,0.5)] rounded p-0">
+            <div class="flex items-center justify-center gap-4 bg-white border border-print-border px-8 py-5 rounded-2xl shadow-sm">
+                <input type="text" x-model="match.scoreA" class="editable w-16 text-center text-7xl font-num font-extrabold text-print-text p-0" placeholder="0">
+                <div class="text-5xl font-extrabold text-gray-300">-</div>
+                <input type="text" x-model="match.scoreB" class="editable w-16 text-center text-7xl font-num font-extrabold text-print-text p-0" placeholder="0">
             </div>
 
-            <div class="flex flex-col items-center w-full md:w-2/5 z-10">
-                <div class="relative group cursor-pointer mb-6">
-                    <div class="absolute inset-0 bg-brand-secondary blur-xl opacity-20 group-hover:opacity-40 transition-opacity rounded-full"></div>
-                    <div class="w-32 h-32 bg-brand-dark/50 rounded-full flex items-center justify-center border border-white/10 relative z-10 backdrop-blur-sm">
-                        <i class="fa-solid fa-shield-dog text-6xl text-white/80"></i>
-                    </div>
+            <div class="flex flex-col items-center gap-3 text-center">
+                <div class="w-24 h-24 rounded-full bg-white border border-print-border flex items-center justify-center shadow-inner">
+                    <i class="fa-solid fa-shield text-5xl text-gray-300"></i>
                 </div>
-                <input type="text" x-model="match.teamB" class="editable-field w-full text-center text-4xl font-black text-white rounded p-2" placeholder="الفريق الضيف">
+                <input type="text" x-model="match.teamB" class="editable w-full text-center text-3xl font-extrabold text-print-text px-2 py-1" placeholder="الفريق الضيف">
             </div>
         </div>
 
-        <div class="px-8 md:px-12 py-10 bg-brand-dark/30 border-t border-white/5">
-            <div class="flex justify-between items-center mb-8">
-                <h3 class="text-2xl font-black flex items-center gap-3">
-                    <span class="w-2 h-8 rounded bg-brand-primary"></span>
-                    أحداث اللقاء
+        <div class="mb-6">
+            <div class="flex justify-between items-center mb-6 pb-2 border-b border-print-border">
+                <h3 class="text-xl font-bold flex items-center gap-2.5 text-print-text">
+                    <i class="fa-solid fa-clipboard-list text-print-accent"></i>
+                    سجل أحداث المباراة
                 </h3>
-                <button @click="addEvent()" class="no-print bg-white/5 hover:bg-white/10 border border-white/10 text-white px-5 py-2.5 rounded-xl transition-all flex items-center gap-2 font-bold">
-                    <i class="fa-solid fa-plus text-brand-primary"></i> إضافة حدث
+                <button @click="addEvent()" class="no-print bg-gray-800 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors flex items-center gap-2 text-sm font-semibold">
+                    <i class="fa-solid fa-plus"></i> إضافة حدث جديد
                 </button>
             </div>
 
-            <div class="space-y-4">
+            <div class="space-y-3">
                 <template x-for="(event, index) in match.events" :key="index">
-                    <div class="flex items-center gap-4 p-4 rounded-2xl bg-white/[0.02] border border-white/5 hover:border-brand-primary/30 transition-colors group relative overflow-hidden">
+                    <div class="event-item grid grid-cols-[auto,auto,1fr,auto,auto] items-center gap-x-4 gap-y-1 p-3 rounded-lg bg-white border border-print-border hover:border-gray-300 hover:bg-print-card transition-all relative group">
                         
-                        <div class="absolute right-0 top-0 bottom-0 w-1 bg-gradient-to-b from-brand-primary to-brand-secondary opacity-50"></div>
-
-                        <div class="w-20 shrink-0">
-                            <div class="relative flex items-center bg-brand-dark/80 rounded-xl border border-white/5 px-2 py-2">
-                                <input type="text" x-model="event.time" class="editable-field w-full text-center text-brand-primary font-black text-lg p-0" placeholder="00">
-                                <span class="text-slate-500 font-bold ml-1">'</span>
-                            </div>
+                        <div class="w-14 flex items-center gap-1 font-num font-bold text-lg text-print-accent bg-print-card px-2.5 py-1.5 rounded-md border border-print-border">
+                            <input type="text" x-model="event.time" class="editable w-full text-center p-0 font-bold" placeholder="00">
+                            <span class="text-xs text-gray-400">'</span>
                         </div>
 
-                        <div class="w-32 shrink-0 no-print">
-                            <select x-model="event.type" class="w-full bg-brand-dark/80 border border-white/10 text-white rounded-xl p-2.5 text-sm focus:outline-none focus:border-brand-primary appearance-none text-center">
-                                <option value="goal">هدف ⚽</option>
-                                <option value="yellow">إنذار 🟨</option>
-                                <option value="red">طرد 🟥</option>
-                                <option value="sub">تبديل 🔄</option>
-                            </select>
+                        <div class="w-9 flex justify-center event-icon text-xl">
+                            <template x-if="event.type === 'goal'"><i class="fa-solid fa-futbol text-gray-800" title="هدف"></i></template>
+                            <template x-if="event.type === 'yellow'"><i class="fa-solid fa-square text-yellow-400" title="بطاقة صفراء"></i></template>
+                            <template x-if="event.type === 'red'"><i class="fa-solid fa-square text-red-600" title="بطاقة حمراء"></i></template>
+                            <template x-if="event.type === 'sub'"><i class="fa-solid fa-right-left text-print-accent" title="تبديل"></i></template>
                         </div>
 
-                        <div class="w-12 shrink-0 flex justify-center text-2xl">
-                            <template x-if="event.type === 'goal'"><i class="fa-solid fa-futbol text-white drop-shadow-[0_0_8px_rgba(255,255,255,0.5)]"></i></template>
-                            <template x-if="event.type === 'yellow'"><i class="fa-solid fa-note-sticky text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.5)]"></i></template>
-                            <template x-if="event.type === 'red'"><i class="fa-solid fa-note-sticky text-red-500 drop-shadow-[0_0_8px_rgba(239,68,68,0.5)]"></i></template>
-                            <template x-if="event.type === 'sub'"><i class="fa-solid fa-right-left text-brand-primary"></i></template>
-                        </div>
-
-                        <div class="flex-1 flex flex-col">
-                            <input type="text" x-model="event.player1" class="editable-field w-full text-xl font-bold text-white rounded p-1" placeholder="اسم اللاعب الأساسي...">
+                        <div class="flex flex-col flex-1 min-w-0">
+                            <input type="text" x-model="event.player1" class="editable w-full text-base font-semibold text-print-text px-1 py-0.5" placeholder="اسم اللاعب...">
                             <template x-if="event.type === 'sub'">
-                                <div class="flex items-center gap-2 mt-1">
-                                    <i class="fa-solid fa-arrow-down text-red-400 text-xs"></i>
-                                    <input type="text" x-model="event.player2" class="editable-field w-full text-sm font-medium text-slate-400 rounded p-1" placeholder="اسم اللاعب الخارج...">
+                                <div class="flex items-center gap-1.5 text-xs text-gray-500 mt-0.5">
+                                    <i class="fa-solid fa-arrow-turn-down text-red-500 flip-x"></i>
+                                    <input type="text" x-model="event.player2" class="editable flex-1 text-gray-500 px-1 py-0" placeholder="اللاعب الخارج...">
                                 </div>
                             </template>
                         </div>
 
-                        <div class="w-40 shrink-0 no-print">
-                            <select x-model="event.team" class="w-full bg-brand-dark/80 border border-white/10 text-brand-primary font-bold rounded-xl p-2.5 text-sm focus:outline-none focus:border-brand-primary text-center">
-                                <option value="A" x-text="match.teamA || 'الفريق المضيف'"></option>
-                                <option value="B" x-text="match.teamB || 'الفريق الضيف'"></option>
+                        <div class="flex gap-2 no-print">
+                            <select x-model="event.team" class="editable bg-white border border-gray-300 text-print-text rounded-md px-2 py-1.5 text-xs font-medium focus:ring-1 focus:ring-print-accent">
+                                <option value="A">المضيف</option>
+                                <option value="B">الضيف</option>
+                            </select>
+                            <select x-model="event.type" class="editable bg-white border border-gray-300 text-print-text rounded-md px-2 py-1.5 text-xs font-medium focus:ring-1 focus:ring-print-accent">
+                                <option value="goal">هدف</option>
+                                <option value="yellow">إنذار</option>
+                                <option value="red">طرد</option>
+                                <option value="sub">تبديل</option>
                             </select>
                         </div>
-                        
-                        <div class="hidden print:block w-40 shrink-0 text-center font-bold text-brand-primary text-lg">
+
+                        <div class="print-team-label text-sm font-bold text-gray-600 w-28 text-left">
                             <span x-text="event.team === 'A' ? match.teamA : match.teamB"></span>
                         </div>
 
-                        <button @click="removeEvent(index)" class="no-print w-10 h-10 shrink-0 flex items-center justify-center rounded-xl bg-red-500/10 text-red-400 hover:bg-red-500 hover:text-white transition-colors">
-                            <i class="fa-solid fa-xmark text-lg"></i>
+                        <button @click="removeEvent(index)" class="no-print opacity-0 group-hover:opacity-100 transition-opacity w-8 h-8 flex items-center justify-center rounded-full text-gray-400 hover:text-red-500 hover:bg-red-50 transition-colors ml-1">
+                            <i class="fa-solid fa-times text-lg"></i>
                         </button>
                     </div>
                 </template>
 
                 <template x-if="match.events.length === 0">
-                    <div class="text-center py-12 text-slate-500 border border-dashed border-white/10 rounded-2xl bg-white/[0.01]">
-                        <i class="fa-regular fa-futbol text-4xl mb-3 opacity-50"></i>
-                        <p class="font-medium">لا توجد أحداث مسجلة حتى الآن. ابدأ بإضافة الأهداف والبطاقات!</p>
+                    <div class="text-center py-10 text-gray-400 border-2 border-dashed border-print-border rounded-lg bg-print-card">
+                        <i class="fa-regular fa-folder-open text-3xl mb-3 block"></i>
+                        لا توجد أحداث مسجلة لهذا التقرير.
                     </div>
                 </template>
             </div>
         </div>
+
+        <div class="mt-auto pt-10 border-t border-print-border print:fixed print:bottom-[15mm] print:left-[15mm] print:right-[15mm]">
+            <div class="grid grid-cols-2 gap-10 text-center text-sm text-gray-600">
+                <div class="flex flex-col items-center gap-2">
+                    <div class="w-full h-16 border-b-2 border-gray-300 border-dashed"></div>
+                    <div class="font-bold">توقيع حكم المباراة</div>
+                </div>
+                <div class="flex flex-col items-center gap-2">
+                    <div class="w-full h-16 border-b-2 border-gray-300 border-dashed"></div>
+                    <div class="font-bold">توقيع مراقب المباراة</div>
+                </div>
+            </div>
+            <div class="text-center text-xs text-gray-400 mt-8 font-num">تم إنشاء هذا التقرير إلكترونياً • <span x-text="new Date().toLocaleDateString('ar-EG')"></span></div>
+        </div>
+
     </div>
 
     <script>
         document.addEventListener('alpine:init', () => {
+            // بيانات افتراضية قوية لعرض التصميم
+            const defaultData = {
+                league: 'نهائي دوري أبطال أوروبا 2026',
+                date: '30 مايو 2026',
+                stadium: 'استاد مايكروسوفت آرينا - لندن',
+                refId: 'UCL-FA-01',
+                teamA: 'مانشستر سيتي',
+                teamB: 'ريال مدريد',
+                scoreA: '1',
+                scoreB: '2',
+                events: [
+                    { time: '12', type: 'yellow', player1: 'رودري', player2: '', team: 'A' },
+                    { time: '26', type: 'goal', player1: 'جود بيلينغهام', player2: '', team: 'B' },
+                    { time: '41', type: 'yellow', player1: 'إيدير ميليتاو', player2: '', team: 'B' },
+                    { time: '55', type: 'goal', player1: 'إرلينغ هالاند', player2: '', team: 'A' },
+                    { time: '68', type: 'sub', player1: 'لوكا مودريتش', player2: 'توني كروس', team: 'B' },
+                    { time: '75', type: 'sub', player1: 'جيريمي دوكو', player2: 'جاك غريليتش', team: 'A' },
+                    { time: '89', type: 'goal', player1: 'فينيسيوس جونيور', player2: '', team: 'B' },
+                    { time: '90+2', type: 'red', player1: 'كايل ووكر', player2: '', team: 'A' }
+                ]
+            };
+
             Alpine.data('matchApp', () => ({
-                match: {
-                    league: 'نهائي كأس العالم',
-                    date: '18 ديسمبر 2026',
-                    stadium: 'ملعب لوسيل',
-                    teamA: 'الأرجنتين',
-                    teamB: 'فرنسا',
-                    scoreA: '3',
-                    scoreB: '3',
-                    events: [
-                        { time: '23', type: 'goal', player1: 'ليونيل ميسي (ركلة جزاء)', player2: '', team: 'A' },
-                        { time: '36', type: 'goal', player1: 'أنخيل دي ماريا', player2: '', team: 'A' },
-                        { time: '80', type: 'goal', player1: 'كيليان مبابي (ركلة جزاء)', player2: '', team: 'B' },
-                        { time: '81', type: 'goal', player1: 'كيليان مبابي', player2: '', team: 'B' },
-                        { time: '90', type: 'yellow', player1: 'أدريان رابيو', player2: '', team: 'B' },
-                        { time: '108', type: 'goal', player1: 'ليونيل ميسي', player2: '', team: 'A' },
-                        { time: '118', type: 'goal', player1: 'كيليان مبابي (ركلة جزاء)', player2: '', team: 'B' },
-                        { time: '120', type: 'sub', player1: 'باولو ديبالا', player2: 'نيكولاس تاليافيكو', team: 'A' }
-                    ]
-                },
+                match: defaultData,
                 
-                // دالة التهيئة (تُنفذ عند فتح الصفحة)
                 init() {
-                    // 1. محاولة استرجاع البيانات المحفوظة
-                    const savedData = localStorage.getItem('proMatchData');
-                    if (savedData) {
-                        try {
-                            this.match = JSON.parse(savedData);
-                        } catch (e) {
-                            console.error('خطأ في تحميل البيانات:', e);
-                        }
+                    // تحميل البيانات من localStorage إذا وجدت
+                    const saved = localStorage.getItem('officialMatchReportA4');
+                    if (saved) {
+                        try { this.match = JSON.parse(saved); } catch (e) { this.match = defaultData; }
                     }
 
-                    // 2. مراقبة أي تغيير في البيانات وحفظها فوراً
+                    // مراقبة وحفظ أي تغيير تلقائياً
                     this.$watch('match', (newValue) => {
-                        localStorage.setItem('proMatchData', JSON.stringify(newValue));
-                    }, { deep: true }); // deep: true مهمة جداً لمراقبة المصفوفات (الأحداث)
+                        localStorage.setItem('officialMatchReportA4', JSON.stringify(newValue));
+                    }, { deep: true });
                 },
 
                 addEvent() {
                     this.match.events.push({ time: '', type: 'goal', player1: '', player2: '', team: 'A' });
+                    // ترتيب الأحداث تلقائياً حسب الوقت بعد كل إضافة (اختياري، يحتاج دالة بارسر للدقائق)
                 },
 
                 removeEvent(index) {
-                    this.match.events.splice(index, 1);
+                    if(confirm('هل أنت متأكد من حذف هذا الحدث؟')) {
+                        this.match.events.splice(index, 1);
+                    }
                 },
 
                 resetData() {
-                    if(confirm('هل أنت متأكد من رغبتك في مسح كافة البيانات والعودة للوضع الافتراضي؟')) {
-                        localStorage.removeItem('proMatchData');
-                        location.reload();
+                    if(confirm('هل أنت متأكد من مسح كافة البيانات؟ لا يمكن التراجع.')) {
+                        this.match = { ...defaultData, events: [] }; // إعادة للقيم الافتراضية مع تصفير الأحداث
+                        localStorage.removeItem('officialMatchReportA4');
                     }
                 }
             }))
